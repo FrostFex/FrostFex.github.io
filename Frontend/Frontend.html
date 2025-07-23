@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rust Casino</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .game-section {
+      display: none;
+    }
+
+    #minesGrid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+    }
+
+    #minesGrid button {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      background-color: #374151;
+      transition: background-color 0.2s;
+    }
+
+    #minesGrid button:hover {
+      background-color: #4b5563;
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white font-sans flex flex-col lg:flex-row min-h-screen">
+  <!-- Sidebar Navigation -->
+  <nav class="w-full lg:w-20 bg-gray-800 p-4 space-y-4 flex lg:flex-col">
+    <button onclick="showSection('homeSection')" class="hover:underline">Home</button>
+    <button onclick="showSection('coinflipSection')" class="hover:underline">Coinflip</button>
+    <button onclick="showSection('cratesSection')" class="hover:underline">Crates</button>
+    <button onclick="showSection('battlesSection')" class="hover:underline">Battles</button>
+    <button onclick="showSection('minesSection')" class="hover:underline">Mines</button>
+    <button onclick="showSection('crashSection')" class="hover:underline">Crash</button>
+  </nav>
+
+  <!-- Main container -->
+  <div class="flex-1">
+    <!-- Navbar -->
+    <header class="flex justify-between items-center p-4 bg-gray-800 flex-wrap">
+      <h1 class="text-2xl font-bold">Rust Casino</h1>
+      <div class="text-center mx-auto">
+        <h2 class="text-lg font-semibold">Balance</h2>
+        <p id="userBalance">$0.00</p>
+      </div>
+      <button id="loginButton" class="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded">
+        Login with Steam
+      </button>
+    </header>
+
+    <!-- Main content -->
+    <main class="p-6 space-y-8">
+      <!-- Home Section -->
+      <section id="homeSection" class="game-section block bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-3xl font-bold mb-4">Welcome to Rust Casino</h2>
+        <p class="text-lg">Enjoy exciting games like Mines, Crash, Coinflip, Crates, and more. Log in with your Steam account to get started and view your inventory!</p>
+      </section>
+
+      <!-- Coinflip Section -->
+      <section id="coinflipSection" class="game-section bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold">Coinflip Game (Coming Soon)</h2>
+      </section>
+
+      <!-- Crates Section -->
+      <section id="cratesSection" class="game-section bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold">Crates Game (Coming Soon)</h2>
+      </section>
+
+      <!-- Battles Section -->
+      <section id="battlesSection" class="game-section bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold">Crate Battles (Coming Soon)</h2>
+      </section>
+
+      <!-- Crash Section -->
+      <section id="crashSection" class="game-section bg-gray-800 p-6 rounded-lg shadow-lg">
+        <h2 class="text-2xl font-bold">Crash Game (Coming Soon)</h2>
+      </section>
+
+      <!-- Mines Game Section -->
+      <section id="minesSection" class="game-section w-full bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div class="flex flex-col lg:flex-row gap-8">
+          <!-- Controls -->
+          <div class="flex flex-col space-y-4 w-full lg:w-1/4">
+            <h2 class="text-2xl font-bold">Mines Game</h2>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium">Bet Amount</label>
+              <input type="number" id="betAmount" value="0" class="w-full p-2 rounded bg-gray-700 text-white" />
+              <div class="flex justify-between space-x-2">
+                <button class="flex-1 bg-gray-600 px-2 py-1 rounded" onclick="adjustBet('half')">1/2</button>
+                <button class="flex-1 bg-gray-600 px-2 py-1 rounded" onclick="adjustBet('double')">x2</button>
+                <button class="flex-1 bg-gray-600 px-2 py-1 rounded" onclick="adjustBet('max')">Max</button>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="block text-sm font-medium">Number of Mines</label>
+              <input type="number" id="mineCount" value="3" min="1" max="24" class="w-full p-2 rounded bg-gray-700 text-white" />
+            </div>
+            <button class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded" onclick="startMines()">Start Game</button>
+            <div id="mineResult" class="text-sm mt-2 text-red-400"></div>
+          </div>
+
+          <!-- Mines Grid -->
+          <div id="minesGrid" class="w-full lg:w-3/4 grid-cols-5 gap-1">
+            <!-- Tiles rendered here -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 bg-gray-800 mt-12">
+      <p>&copy; 2025 Rust Casino. All rights reserved.</p>
+    </footer>
+  </div>
+
+  <script>
+    let userBalance = 1000;
+    let minePositions = [];
+    let gameStarted = false;
+
+    document.getElementById('userBalance').innerText = `$${userBalance.toFixed(2)}`;
+
+    document.getElementById('loginButton').onclick = () => {
+      window.location.href = '/login/steam';
+    };
+
+    function showSection(id) {
+      document.querySelectorAll('.game-section').forEach(sec => sec.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+    }
+
+    function adjustBet(action) {
+      const betInput = document.getElementById('betAmount');
+      let current = parseFloat(betInput.value) || 0;
+      if (action === 'half') betInput.value = (current / 2).toFixed(2);
+      if (action === 'double') betInput.value = (current * 2).toFixed(2);
+      if (action === 'max') betInput.value = userBalance.toFixed(2);
+    }
+
+    function startMines() {
+      const bet = parseFloat(document.getElementById('betAmount').value);
+      const mineCount = parseInt(document.getElementById('mineCount').value);
+
+      fetch('http://localhost:5000/api/mines/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bet, mineCount, balance: userBalance })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          document.getElementById('mineResult').innerText = data.error;
+          return;
+        }
+        minePositions = data.minePositions;
+        userBalance = data.newBalance;
+        document.getElementById('userBalance').innerText = `$${userBalance.toFixed(2)}`;
+        document.getElementById('mineResult').innerText = '';
+        generateGrid();
+        gameStarted = true;
+      })
+      .catch(err => {
+        document.getElementById('mineResult').innerText = 'Failed to fetch data from server.';
+        console.error(err);
+      });
+    }
+
+    function generateGrid() {
+      const grid = document.getElementById('minesGrid');
+      grid.innerHTML = '';
+      for (let i = 0; i < 25; i++) {
+        const btn = document.createElement('button');
+        btn.onclick = () => revealTile(i, btn);
+        grid.appendChild(btn);
+      }
+    }
+
+    function revealTile(index, button) {
+      if (!gameStarted) return;
+      fetch('http://localhost:5000/api/mines/reveal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ index, minePositions })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.mine) {
+          button.style.backgroundColor = 'red';
+          document.getElementById('mineResult').innerText = '💥 You hit a mine!';
+          gameStarted = false;
+        } else {
+          button.style.backgroundColor = 'green';
+        }
+      });
+    }
+
+    // Show home on load
+    showSection('homeSection');
+  </script>
+</body>
+</html>
